@@ -1,22 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:guessing_game/create_or_join_page.dart';
-import 'package:guessing_game/home_page.dart';
+
 import 'package:guessing_game/models.dart';
-import 'package:guessing_game/reactive_text_field.dart';
+import 'package:guessing_game/pages/create_or_join_page.dart';
+import 'package:guessing_game/pages/home_page.dart';
+import 'package:guessing_game/socket_client_provider.dart';
+import 'package:guessing_game/widgets/reactive_text_field.dart';
 import 'package:guessing_game/socket_client.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:socket_io_client/socket_io_client.dart';
 
 void main() {
-  runApp(MaterialApp(
-    title: 'Guessing Game',
-    theme: ThemeData(
-      primarySwatch: Colors.indigo,
+  runApp(SocketClientProvider(
+    socketClient: SocketClient(),
+    child: MaterialApp(
+      title: 'Guessing Game',
+      theme: ThemeData(
+        primarySwatch: Colors.indigo,
+      ),
+      routes: {
+        RouteNames.homePage: (context) => const HomePage(),
+        RouteNames.createOrJoinPage: (context) => const CreateOrJoinPage(),
+        RouteNames.gamePage: (context) => const HomePage(),
+      },
     ),
-    routes: {
-      '/': (context) => const HomePage(),
-      '/create_or_join': (context) => const CreateOrJoinPage(),
-      '/game': (context) => const HomePage(),
-    },
   ));
+}
+
+class RouteNames {
+  static const homePage = '/';
+  static const createOrJoinPage = '/create_or_join';
+  static const gamePage = '/game';
 }

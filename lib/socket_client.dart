@@ -4,67 +4,124 @@ import 'package:guessing_game/models.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:socket_io_client/socket_io_client.dart';
 
+typedef AlertCallback = void Function(String message, [bool isError]);
+
 class SocketClient {
   SocketClient();
-  late final Socket socket;
 
-  void initSocket({required String username}) {
-    // Dart client
-    socket = IO.io(
-        'http://localhost:3000',
-        IO.OptionBuilder()
-            .setTransports(['websocket']) // for Flutter or Dart VM
-            // .disableAutoConnect() // disable auto-connection
-            .setExtraHeaders({'username': username}) // optional
-            .build());
-    socket.onConnect((something) {
-      print('connect ${something}');
-      socket.emit('msg', 'test');
-    });
-
-    // socket.connect();
-    socket.on('event', (data) => print(data));
-    socket.onDisconnect((_) => print('disconnect'));
-    socket.on('fromServer', (_) => print(_));
-
-    socket.onAny((event, data) {
-      print("Event: ${event}; Data ${data}");
-    });
-    socket.on(EVENTS.user$chat.name, (message) {
-      print(message);
-    });
-  }
-
+  IO.Socket? _socket;
   String? roomId;
-  void joinRoom({required String userName, required String roomCode}) {
-    socket.emitWithAck(
-      EVENTS.user$join_room.name,
-      {"roomId": roomCode, "username": userName},
-      ack: (success) => {if (success) roomId = roomCode},
+  final String serverUrl = 'http://localhost:3000';
+
+  // ValueNotifiers for state
+  final ValueNotifier<bool> isConnected = ValueNotifier(false);
+  final ValueNotifier<List<Room>> rooms = ValueNotifier([]);
+  final ValueNotifier<List<String>> chatMessages = ValueNotifier([]);
+
+  String? _username;
+
+  void connect({required String username, required AlertCallback alert}) {
+    _username = username;
+    // Socket is not connected until connect() is called
+    _socket = IO.io(
+      serverUrl,
+      IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect() // manual connect
+          .setExtraHeaders({'username': username})
+          .build(),
     );
+    _registerSocketEvents();
+
+    _socket!.connect();
   }
 
-  ValueNotifier<List<Room>> rooms = ValueNotifier([]);
-
-  
-  void createGame({required String username}) {
-    socket.emitWithAck(
-      EVENTS.user$create_game.name,
-      {
-        "username": username,
-      },
-      ack: (roomId) => {this.roomId = roomId},
-    );
+  void disconnect() {
+    _socket?.disconnect();
+    isConnected.value = false;
   }
 
-  void chat(Function(String) alert) {
-    if (roomId == null) {
-      alert("You are not connected to any game");
+  void _registerSocketEvents() {
+    if (_socket == null) return;
+    _socket!.onConnect((_) {
+      isConnected.value = true;
+    });
+    _socket!.onDisconnect((_) {
+      isConnected.value = false;
+    });
+
+    _socket!.onAny((event, data) {
+      print("Event: $event, Data: $data");
+    });
+
+    _socket!.on(EVENTS.user$chat.name, (message) {
+      chatMessages.value = [...chatMessages.value, message.toString()];
+    });
+    // Example: handle room list updates
+    _socket!.on('rooms', (data) {
+      if (data is List) {
+        rooms.value = data.map((e) => Room.fromJson(e)).toList();
+      }
+    });
+
+    _socket!.on('error', (msg) {});
+  }
+
+  void joinRoom({
+    required String userName,
+    required String roomCode,
+    required AlertCallback alert,
+  }) {
+    if (_socket == null) {
       return;
     }
-    socket.emit(EVENTS.user$chat.name,
-        {"message": "Hello from Flutter", "roomId": roomId});
-    print("Send message ${EVENTS.user$create_game.name}");
+    _socket!.emitWithAck(
+      EVENTS.user$join_room.name,
+      {"roomId": roomCode, "username": userName},
+      ack: (success) {
+        if (success) {
+          roomId = roomCode;
+        } else {
+          alert("");
+        }
+      },
+    );
+  }
+
+  void createGame({
+    required String username,
+    required AlertCallback alert,
+  }) {
+    if (_socket == null) {
+      alert("Socket not initialized.", true);
+      return;
+    }
+    _socket!.emitWithAck(
+      EVENTS.user$create_game.name,
+      {"username": username},
+      ack: (roomId) {
+        if (roomId != null) {
+          this.roomId = roomId;
+        } else {
+          alert(
+            "Failed to create game.",
+            true,
+          );
+        }
+      },
+    );
+  }
+
+  void sendChat(String message, AlertCallback alert) {
+    if (_socket == null || roomId == null) {
+      alert(
+        "Not connected to any game.",
+        true,
+      );
+      return;
+    }
+    _socket!
+        .emit(EVENTS.user$chat.name, {"message": message, "roomId": roomId});
   }
 }
 
@@ -77,4 +134,12 @@ class Room {
     required this.created,
     required this.activePlayers,
   });
+
+  factory Room.fromJson(Map<String, dynamic> json) {
+    return Room(
+      roomId: json['roomId'] ?? '',
+      created: json['created'] ?? '',
+      activePlayers: json['activePlayers']?.toString() ?? '',
+    );
+  }
 }

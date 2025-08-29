@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:guessing_game/reactive_text_field.dart';
+import 'package:guessing_game/widgets/reactive_text_field.dart';
 import 'package:guessing_game/socket_client.dart';
 
 class CreateOrJoinPage extends StatefulWidget {
