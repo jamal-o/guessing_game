@@ -1,6 +1,7 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'package:flutter/material.dart';
 import 'package:guessing_game/models.dart';
+import 'package:guessing_game/pages/game_page.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:socket_io_client/socket_io_client.dart';
 
@@ -15,12 +16,17 @@ class SocketClient {
 
   // ValueNotifiers for state
   final ValueNotifier<bool> isConnected = ValueNotifier(false);
+  final ValueNotifier<bool> isGameMaster = ValueNotifier(false);
   final ValueNotifier<List<Room>> rooms = ValueNotifier([]);
+  final ValueNotifier<List<ScoreboardRow>> scoreboard = ValueNotifier([]);
   final ValueNotifier<List<String>> chatMessages = ValueNotifier([]);
+  final ValueNotifier<Question?> question = ValueNotifier(null);
 
   String? _username;
 
-  void connect({required String username, required AlertCallback alert}) {
+  void connect({
+    required String username,
+  }) {
     _username = username;
     // Socket is not connected until connect() is called
     _socket = IO.io(
@@ -44,27 +50,85 @@ class SocketClient {
   void _registerSocketEvents() {
     if (_socket == null) return;
     _socket!.onConnect((_) {
+      _logEvent("Connect", null);
+
       isConnected.value = true;
     });
     _socket!.onDisconnect((_) {
+      _logEvent("Disconnect", null);
       isConnected.value = false;
     });
 
-    _socket!.onAny((event, data) {
-      print("Event: $event, Data: $data");
-    });
-
     _socket!.on(EVENTS.user$chat.name, (message) {
+      _logEvent(EVENTS.user$chat.name, message);
+
       chatMessages.value = [...chatMessages.value, message.toString()];
     });
-    // Example: handle room list updates
-    _socket!.on('rooms', (data) {
+
+    _socket!.on(EVENTS.game$rooms.name, (data) {
+      _logEvent(EVENTS.game$rooms.name, data);
+
       if (data is List) {
         rooms.value = data.map((e) => Room.fromJson(e)).toList();
       }
     });
 
-    _socket!.on('error', (msg) {});
+    _socket!.on(EVENTS.user$new_question.name, (data) {
+      _logEvent(EVENTS.user$new_question.name, data);
+
+      throw UnimplementedError();
+    });
+
+    _socket!.on(EVENTS.user$add_question.name, (data) {
+      _logEvent(EVENTS.user$add_question.name, data);
+
+      throw UnimplementedError();
+    });
+
+    _socket!.on(EVENTS.game$rooms.name, (data) {
+      _logEvent(EVENTS.game$rooms.name, data);
+      rooms.value = (data as List<Map<String, dynamic>>)
+          .map((element) => Room.fromJson(element))
+          .toList();
+    });
+
+    _socket!.on(EVENTS.player$guess.name, (data) {
+      _logEvent(EVENTS.player$guess.name, data);
+
+      throw UnimplementedError();
+    });
+
+    _socket!.on(EVENTS.game$update_scoreboard.name, (data) {
+      _logEvent(EVENTS.game$update_scoreboard.name, data);
+
+      scoreboard.value = data;
+    });
+
+    _socket!.on(EVENTS.game$question_timeout.name, (data) {
+      _logEvent(EVENTS.game$question_timeout.name, data);
+
+      throw UnimplementedError();
+    });
+
+    _socket!.on(EVENTS.game$winner.name, (data) {
+      _logEvent(EVENTS.game$winner.name, data);
+
+      throw UnimplementedError();
+    });
+
+    _socket!.on(EVENTS.game$error.name, (data) {
+      _logEvent(EVENTS.game$error.name, data);
+
+      //TODO: handle error
+    });
+
+    _socket!.on('error', (msg) {
+      _logEvent("error", msg);
+    });
+  }
+
+  void _logEvent(String event, dynamic data) {
+    print("Event: $event, Data: $data");
   }
 
   void joinRoom({
@@ -89,7 +153,6 @@ class SocketClient {
   }
 
   void createGame({
-    required String username,
     required AlertCallback alert,
   }) {
     if (_socket == null) {
@@ -98,10 +161,14 @@ class SocketClient {
     }
     _socket!.emitWithAck(
       EVENTS.user$create_game.name,
-      {"username": username},
+      {"username": this._username},
       ack: (roomId) {
+        print("Create Game Ack: $roomId");
         if (roomId != null) {
           this.roomId = roomId;
+          alert(
+            "Game created successfully",
+          );
         } else {
           alert(
             "Failed to create game.",
@@ -142,4 +209,17 @@ class Room {
       activePlayers: json['activePlayers']?.toString() ?? '',
     );
   }
+}
+
+class ScoreboardRow {
+  final String userName;
+  final int score;
+
+  ScoreboardRow({required this.userName, required this.score});
+}
+
+class Question {
+  final String text;
+
+  Question({required this.text});
 }

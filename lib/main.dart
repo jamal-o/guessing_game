@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'package:guessing_game/models.dart';
 import 'package:guessing_game/pages/create_or_join_page.dart';
+import 'package:guessing_game/pages/game_page.dart';
 import 'package:guessing_game/pages/home_page.dart';
 import 'package:guessing_game/socket_client_provider.dart';
-import 'package:guessing_game/widgets/reactive_text_field.dart';
 import 'package:guessing_game/socket_client.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'package:socket_io_client/socket_io_client.dart';
 
 void main() {
   runApp(SocketClientProvider(
@@ -20,7 +17,7 @@ void main() {
       routes: {
         RouteNames.homePage: (context) => const HomePage(),
         RouteNames.createOrJoinPage: (context) => const CreateOrJoinPage(),
-        RouteNames.gamePage: (context) => const HomePage(),
+        RouteNames.gamePage: (context) => const GamePage(),
       },
     ),
   ));

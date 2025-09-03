@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 enum EVENTS {
   //player
   player$guess,
@@ -5,6 +7,7 @@ enum EVENTS {
   //game_master
   user$create_game,
   user$add_question,
+  user$new_question,
 
   //user
   user$chat,
@@ -15,6 +18,7 @@ enum EVENTS {
   game$update_scoreboard,
   game$question_timeout,
   game$winner,
+  game$rooms,
   game$end_game,
   game$error,
 }

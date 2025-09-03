@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:guessing_game/pages/home_page.dart';
+import 'package:guessing_game/socket_client_provider.dart';
 import 'package:guessing_game/widgets/reactive_text_field.dart';
 import 'package:guessing_game/socket_client.dart';
 
@@ -13,172 +15,103 @@ class _GamePageState extends State<GamePage> {
   @override
   Widget build(BuildContext context) {
     SocketClient socketClient = SocketClient();
-    bool isGameMaster = false; // Should be set based on actual user role
-    String currentQuestion = "What is the capital of France?";
-    String userGuess = "";
-    List<String> chatMessages = ["Welcome to the game!", "Good luck!"];
-    Map<String, int> scoreboard = {"Alice": 10, "Bob": 7, "You": 5};
 
     // Responsive layout
-    var screenWidth = MediaQuery.of(context).size.width;
+    var screenWidth = MediaQuery.sizeOf(context).width;
     var isMobile = screenWidth < 600;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Game Room'),
       ),
-      drawer: isMobile
-          ? Drawer(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  DrawerHeader(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor,
-                    ),
-                    child: Text('Menu', style: TextStyle(color: Colors.white)),
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.chat),
-                    title: Text('Chat'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (context) => Padding(
+      drawer: isMobile ? ScaffoldDrawer() : null,
+      body: Builder(builder: (context) {
+        return ValueListenableBuilder(
+          valueListenable: socketClient.isGameMaster,
+          builder: (context, isGameMaster, child) {
+            return isMobile
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (isGameMaster)
+                        const Card(
+                          elevation: 2,
+                          child: Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: GameMaster(),
+                          ),
+                        ),
+                      const SizedBox(height: 16),
+                      Card(
+                        elevation: 2,
+                        child: Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: SizedBox(
-                            height: 400,
-                            child: ChatWindow(messages: chatMessages),
+                          child: QuestionGuessWidget(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Add a floating button for chat and scoreboard
+                    ],
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (isGameMaster)
+                        const Card(
+                          elevation: 2,
+                          child: Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: GameMaster(),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                  ListTile(
-                    leading: Icon(Icons.leaderboard),
-                    title: Text('Scoreboard'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      showModalBottomSheet(
-                        context: context,
-                        builder: (context) => Padding(
+                      Expanded(
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 2,
+                              child: Card(
+                                elevation: 2,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: ChatWindow(),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              flex: 1,
+                              child: Card(
+                                elevation: 2,
+                                child: Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Scoreboard(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Card(
+                        elevation: 2,
+                        child: Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: SizedBox(
-                            height: 300,
-                            child: Scoreboard(scores: scoreboard),
-                          ),
+                          child: QuestionGuessWidget(),
                         ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            )
-          : null,
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: isMobile
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (isGameMaster)
-                    Card(
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: GameMaster(),
                       ),
-                    ),
-                  SizedBox(height: 16),
-                  Card(
-                    elevation: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: QuestionGuessWidget(
-                        question: currentQuestion,
-                        guess: userGuess,
-                        onGuessChanged: (value) {
-                          // setState should be called in a real implementation
-                          userGuess = value;
-                        },
-                        onSubmit: () {
-                          alert("Guess submitted: $userGuess");
-                        },
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  // Add a floating button for chat and scoreboard
-                ],
-              )
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (isGameMaster)
-                    Card(
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: GameMaster(),
-                      ),
-                    ),
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 2,
-                          child: Card(
-                            elevation: 2,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: ChatWindow(messages: chatMessages),
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          flex: 1,
-                          child: Card(
-                            elevation: 2,
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Scoreboard(scores: scoreboard),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 16),
-                  Card(
-                    elevation: 2,
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: QuestionGuessWidget(
-                        question: currentQuestion,
-                        guess: userGuess,
-                        onGuessChanged: (value) {
-                          // setState should be called in a real implementation
-                          userGuess = value;
-                        },
-                        onSubmit: () {
-                          alert("Guess submitted: $userGuess");
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-      ),
+                    ],
+                  );
+          },
+        );
+      }),
       floatingActionButton: isMobile
           ? Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 FloatingActionButton.extended(
                   heroTag: 'chat',
-                  icon: Icon(Icons.chat),
-                  label: Text('Chat'),
+                  icon: const Icon(Icons.chat),
+                  label: const Text('Chat'),
                   onPressed: () {
                     showModalBottomSheet(
                       context: context,
@@ -186,17 +119,17 @@ class _GamePageState extends State<GamePage> {
                         padding: const EdgeInsets.all(8.0),
                         child: SizedBox(
                           height: 400,
-                          child: ChatWindow(messages: chatMessages),
+                          child: ChatWindow(),
                         ),
                       ),
                     );
                   },
                 ),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 FloatingActionButton.extended(
                   heroTag: 'scoreboard',
-                  icon: Icon(Icons.leaderboard),
-                  label: Text('Scoreboard'),
+                  icon: const Icon(Icons.leaderboard),
+                  label: const Text('Scoreboard'),
                   onPressed: () {
                     showModalBottomSheet(
                       context: context,
@@ -204,7 +137,7 @@ class _GamePageState extends State<GamePage> {
                         padding: const EdgeInsets.all(8.0),
                         child: SizedBox(
                           height: 300,
-                          child: Scoreboard(scores: scoreboard),
+                          child: Scoreboard(),
                         ),
                       ),
                     );
@@ -216,9 +149,63 @@ class _GamePageState extends State<GamePage> {
     );
   }
 
-  void alert(String message) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+  late final alert = alertCallback(context);
+}
+
+class ScaffoldDrawer extends StatelessWidget {
+  const ScaffoldDrawer({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor,
+            ),
+            child: const Text('Menu', style: TextStyle(color: Colors.white)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.chat),
+            title: const Text('Chat'),
+            onTap: () {
+              Navigator.pop(context);
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    height: 400,
+                    child: ChatWindow(),
+                  ),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.leaderboard),
+            title: const Text('Scoreboard'),
+            onTap: () {
+              Navigator.pop(context);
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: SizedBox(
+                    height: 300,
+                    child: Scoreboard(),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -238,8 +225,8 @@ class _GameMasterState extends State<GameMaster> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Text("Game Master"),
-        Text("Add questions here"),
+        const Text("Game Master"),
+        const Text("Add questions here"),
         ReactiveTextField(
             hintText: "Question",
             text: question,
@@ -248,40 +235,56 @@ class _GameMasterState extends State<GameMaster> {
             hintText: "Answer",
             text: answer,
             onChanged: (value) => answer = value),
-        TextButton(onPressed: () {}, child: Text("Add Question")),
+        TextButton(onPressed: () {}, child: const Text("Add Question")),
       ],
     );
   }
 }
 
 // Chat Window Widget
-class ChatWindow extends StatelessWidget {
-  final List<String> messages;
-  const ChatWindow({super.key, required this.messages});
+class ChatWindow extends StatefulWidget {
+  const ChatWindow({
+    super.key,
+  });
 
   @override
+  State<ChatWindow> createState() => _ChatWindowState();
+}
+
+class _ChatWindowState extends State<ChatWindow> {
+  String message = "";
+  @override
   Widget build(BuildContext context) {
+    final socketClient = context.socketClient;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text("Chat", style: Theme.of(context).textTheme.titleMedium),
         Expanded(
-          child: ListView.builder(
-            itemCount: messages.length,
-            itemBuilder: (context, index) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2.0),
-              child: Text(messages[index]),
-            ),
-          ),
+          child: ValueListenableBuilder(
+              valueListenable: socketClient.chatMessages,
+              builder: (context, messages, child) {
+                return ListView.builder(
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Text(messages[index]),
+                  ),
+                );
+              }),
         ),
         ReactiveTextField(
           hintText: "Type a message...",
-          text: "",
-          onChanged: (value) {},
+          text: message,
+          onChanged: (value) {
+            setState(() {
+              message = value;
+            });
+          },
           trailing: IconButton(
-            icon: Icon(Icons.send),
+            icon: const Icon(Icons.send),
             onPressed: () {
-              // TODO: Send chat message
+              socketClient.sendChat(message, alertCallback(context));
             },
           ),
         ),
@@ -292,65 +295,89 @@ class ChatWindow extends StatelessWidget {
 
 // Scoreboard Widget
 class Scoreboard extends StatelessWidget {
-  final Map<String, int> scores;
-  const Scoreboard({super.key, required this.scores});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Scoreboard", style: Theme.of(context).textTheme.titleMedium),
-        ...scores.entries.map((e) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: 2.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(e.key),
-                  Text(e.value.toString()),
-                ],
-              ),
-            )),
-      ],
-    );
-  }
-}
-
-// Question & Guess Widget
-class QuestionGuessWidget extends StatelessWidget {
-  final String question;
-  final String guess;
-  final ValueChanged<String> onGuessChanged;
-  final VoidCallback onSubmit;
-  const QuestionGuessWidget({
+  const Scoreboard({
     super.key,
-    required this.question,
-    required this.guess,
-    required this.onGuessChanged,
-    required this.onSubmit,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Current Question:",
-            style: Theme.of(context).textTheme.titleMedium),
-        SizedBox(height: 8),
-        Text(question, style: Theme.of(context).textTheme.bodyLarge),
-        SizedBox(height: 16),
-        ReactiveTextField(
-          hintText: "Your guess...",
-          text: guess,
-          onChanged: onGuessChanged,
-        ),
-        SizedBox(height: 8),
-        ElevatedButton(
-          onPressed: onSubmit,
-          child: Text("Submit Guess"),
-        ),
-      ],
-    );
+    final socketClient = context.socketClient;
+    return ValueListenableBuilder(
+        valueListenable: socketClient.scoreboard,
+        builder: (context, value, child) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Scoreboard",
+                  style: Theme.of(context).textTheme.titleMedium),
+              // ...scores.entries.map(
+              Expanded(
+                child: ListView.builder(
+                  itemCount: socketClient.scoreboard.value.length, 
+                  itemBuilder: (context, i) {
+                  final record = context.socketClient.scoreboard.value[i];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(record.userName),
+                        Text(record.score.toString()),
+                      ],
+                    ),
+                  );
+                }),
+              ),
+            ],
+          );
+        });
+  }
+}
+
+// Question & Guess Widget
+class QuestionGuessWidget extends StatefulWidget {
+  const QuestionGuessWidget({
+    super.key,
+  });
+
+  @override
+  State<QuestionGuessWidget> createState() => _QuestionGuessWidgetState();
+}
+
+class _QuestionGuessWidgetState extends State<QuestionGuessWidget> {
+  String guess = "";
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+        valueListenable: context.socketClient.question,
+        builder: (context, question, child) {
+          return question == null
+              ? Card(child: Text("No active uestion"))
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text("Current Question:",
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Text(question.text,
+                        style: Theme.of(context).textTheme.bodyLarge),
+                    const SizedBox(height: 16),
+                    ReactiveTextField(
+                      hintText: "Your guess...",
+                      text: guess,
+                      onChanged: (value) {
+                        setState(() {
+                          guess = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () {},
+                      child: const Text("Submit Guess"),
+                    ),
+                  ],
+                );
+        });
   }
 }

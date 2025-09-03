@@ -72,14 +72,14 @@ class _ReactiveTextFieldState extends State<ReactiveTextField> {
   @override
   Widget build(BuildContext context) {
     final outlineInputBorder = OutlineInputBorder(
-      borderSide: BorderSide(
+      borderSide: const BorderSide(
         width: 1,
         strokeAlign: BorderSide.strokeAlignInside,
       ),
       borderRadius: BorderRadius.circular(24),
     );
     return TextSelectionTheme(
-      data: TextSelectionThemeData(
+      data: const TextSelectionThemeData(
           // selectionHandleColor: PHColors.grey5,
           // cursorColor: PHColors.grey5,
           // selectionColor: PHColors.myGreen1,
@@ -98,7 +98,7 @@ class _ReactiveTextFieldState extends State<ReactiveTextField> {
           obscureText: widget.obscureText,
           decoration: InputDecoration(
             suffixIcon: widget.trailing ??
-                (widget.errorText != null ? Icon(Icons.error) : null),
+                (widget.errorText != null ? const Icon(Icons.error) : null),
             // suffixIconColor: widget.errorText != null ? PHColors.red : null,
             prefixIcon: (widget.leading != null)
                 ? SizedBox.square(
@@ -106,7 +106,7 @@ class _ReactiveTextFieldState extends State<ReactiveTextField> {
                     child: Center(child: widget.leading),
                   )
                 : null,
-            contentPadding: EdgeInsets.all(16),
+            contentPadding: const EdgeInsets.all(16),
             errorText: widget.errorText,
             errorMaxLines: 3,
             // errorStyle: PHTextStyles.errorTextStyle,
@@ -116,18 +116,18 @@ class _ReactiveTextFieldState extends State<ReactiveTextField> {
             hintText: widget.hintText,
             filled: true,
             focusedBorder: outlineInputBorder.copyWith(
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                   // color: PHColors.myGreen5,
                   ),
             ),
             focusedErrorBorder: outlineInputBorder.copyWith(
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                     // color: PHColors.red,
                     )),
             enabledBorder: outlineInputBorder,
             border: outlineInputBorder,
             errorBorder: outlineInputBorder.copyWith(
-                borderSide: BorderSide(
+                borderSide: const BorderSide(
                     // color: PHColors.red,
                     )),
             disabledBorder: outlineInputBorder,

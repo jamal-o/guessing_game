@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:guessing_game/main.dart';
+import 'package:guessing_game/socket_client_provider.dart';
 import 'package:guessing_game/widgets/reactive_text_field.dart';
 import 'package:guessing_game/socket_client.dart';
 
@@ -14,7 +16,7 @@ class _CreateOrJoinPageState extends State<CreateOrJoinPage> {
 
   @override
   Widget build(BuildContext context) {
-    SocketClient socketClient = SocketClient();
+    final socketClient = context.socketClient;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Create or Join Room'),
@@ -27,7 +29,11 @@ class _CreateOrJoinPageState extends State<CreateOrJoinPage> {
                 const Center(
                   child: Text('Create or Join Rooms'),
                 ),
-                TextButton(onPressed: () {}, child: Text('Create Room')),
+                TextButton(
+                    onPressed: () {
+                      socketClient.createGame(alert: alert);
+                    },
+                    child: const Text('Create Room')),
                 ReactiveTextField(
                   hintText: "Input room Code",
                   text: roomId,
@@ -37,34 +43,44 @@ class _CreateOrJoinPageState extends State<CreateOrJoinPage> {
                     });
                   },
                 ),
-                TextButton(onPressed: () {}, child: Text('Join Room')),
+                TextButton(onPressed: () {}, child: const Text('Join Room')),
 
                 //////////////////////////////////
                 ///
-                GridView.builder(
-                  gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: 200),
-                  itemCount: socketClient.rooms.value.length,
-                  itemBuilder: (context, index) {
-                    InkWell(
-                      onTap: () => {
-                        //join room navigate to page
-                      },
-                      child: Card(
-                        child: Text("Room Id"),
-                      ),
-                    );
-                  },
-                ),
+                ValueListenableBuilder(
+                    valueListenable: socketClient.rooms,
+                    builder: (context, value, child) {
+                      final rooms = value;
+                      return ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 400),
+                        child: GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
+                                  maxCrossAxisExtent: 200),
+                          itemCount: socketClient.rooms.value.length,
+                          itemBuilder: (context, index) {
+                            return InkWell(
+                              onTap: () => {
+                                //join room navigate to page
+                              },
+                              child: const Card(
+                                child: Text("Room Id"),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    }),
               ],
             );
           }),
     );
   }
 
-  void alert(String message) {
+  void alert(String message, [bool isSuccess = true]) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
+
+    Navigator.of(context).pushNamed(RouteNames.gamePage);
   }
 }
-
