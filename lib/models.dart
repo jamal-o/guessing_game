@@ -7,7 +7,6 @@ enum EVENTS {
   //game_master
   user$create_game,
   user$add_question,
-  user$new_question,
 
   //user
   user$chat,
@@ -21,6 +20,7 @@ enum EVENTS {
   game$rooms,
   game$end_game,
   game$error,
+  game$new_question,
 }
 
 class Response {
@@ -30,4 +30,3 @@ class Response {
 
   Response({required this.message, required this.success, required this.data});
 }
-

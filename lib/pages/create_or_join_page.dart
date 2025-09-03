@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:guessing_game/main.dart';
+import 'package:guessing_game/pages/home_page.dart';
 import 'package:guessing_game/socket_client_provider.dart';
 import 'package:guessing_game/widgets/reactive_text_field.dart';
 import 'package:guessing_game/socket_client.dart';
@@ -26,25 +27,15 @@ class _CreateOrJoinPageState extends State<CreateOrJoinPage> {
           builder: (context, child) {
             return ListView(
               children: [
-                const Center(
-                  child: Text('Create or Join Rooms'),
-                ),
                 TextButton(
                     onPressed: () {
                       socketClient.createGame(alert: alert);
                     },
                     child: const Text('Create Room')),
-                ReactiveTextField(
-                  hintText: "Input room Code",
-                  text: roomId,
-                  onChanged: (value) {
-                    setState(() {
-                      roomId = value;
-                    });
-                  },
+                Divider(),
+                const Center(
+                  child: Text('Join Rooms'),
                 ),
-                TextButton(onPressed: () {}, child: const Text('Join Room')),
-
                 //////////////////////////////////
                 ///
                 ValueListenableBuilder(
@@ -61,10 +52,11 @@ class _CreateOrJoinPageState extends State<CreateOrJoinPage> {
                           itemBuilder: (context, index) {
                             return InkWell(
                               onTap: () => {
-                                //join room navigate to page
+                                socketClient.joinRoom(
+                                    room: rooms[index], alert: alert)
                               },
-                              child: const Card(
-                                child: Text("Room Id"),
+                              child: Card(
+                                child: Text(rooms[index].roomId),
                               ),
                             );
                           },
@@ -77,10 +69,12 @@ class _CreateOrJoinPageState extends State<CreateOrJoinPage> {
     );
   }
 
-  void alert(String message, [bool isSuccess = true]) {
+  void alert(String message, [bool isError = false]) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
 
-    Navigator.of(context).pushNamed(RouteNames.gamePage);
+    if (!isError) {
+      Navigator.of(context).pushNamed(RouteNames.gamePage);
+    }
   }
 }

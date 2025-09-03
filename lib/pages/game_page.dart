@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:guessing_game/main.dart';
 import 'package:guessing_game/pages/home_page.dart';
 import 'package:guessing_game/socket_client_provider.dart';
 import 'package:guessing_game/widgets/reactive_text_field.dart';
@@ -14,7 +15,7 @@ class GamePage extends StatefulWidget {
 class _GamePageState extends State<GamePage> {
   @override
   Widget build(BuildContext context) {
-    SocketClient socketClient = SocketClient();
+    SocketClient socketClient = context.socketClient;
 
     // Responsive layout
     var screenWidth = MediaQuery.sizeOf(context).width;
@@ -23,6 +24,19 @@ class _GamePageState extends State<GamePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Game Room'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              socketClient.disconnect();
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                RouteNames.createOrJoinPage,
+                (route) => route.isFirst,
+              );
+            },
+          ),
+        ],
       ),
       drawer: isMobile ? ScaffoldDrawer() : null,
       body: Builder(builder: (context) {
@@ -84,7 +98,7 @@ class _GamePageState extends State<GamePage> {
                                 elevation: 2,
                                 child: Padding(
                                   padding: const EdgeInsets.all(8.0),
-                                  child: Scoreboard(),
+                                  child: ScoreboardWidget(),
                                 ),
                               ),
                             ),
@@ -137,7 +151,7 @@ class _GamePageState extends State<GamePage> {
                         padding: const EdgeInsets.all(8.0),
                         child: SizedBox(
                           height: 300,
-                          child: Scoreboard(),
+                          child: ScoreboardWidget(),
                         ),
                       ),
                     );
@@ -197,7 +211,7 @@ class ScaffoldDrawer extends StatelessWidget {
                   padding: const EdgeInsets.all(8.0),
                   child: SizedBox(
                     height: 300,
-                    child: Scoreboard(),
+                    child: ScoreboardWidget(),
                   ),
                 ),
               );
@@ -235,7 +249,19 @@ class _GameMasterState extends State<GameMaster> {
             hintText: "Answer",
             text: answer,
             onChanged: (value) => answer = value),
-        TextButton(onPressed: () {}, child: const Text("Add Question")),
+        TextButton(
+            onPressed: () {
+              if (question.isEmpty || answer.isEmpty) {
+                final alert = alertCallback(context);
+                alert("Complete the question");
+                return;
+              }
+              final payload = Question(text: question, answer: answer);
+
+              context.socketClient
+                  .addQuestion(payload, 60, alertCallback(context));
+            },
+            child: const Text("Add Question")),
       ],
     );
   }
@@ -253,6 +279,27 @@ class ChatWindow extends StatefulWidget {
 
 class _ChatWindowState extends State<ChatWindow> {
   String message = "";
+  final controller = ScrollController();
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      context.socketClient.chatMessages.addListener(() {
+        controller.jumpTo(controller.position.maxScrollExtent);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    super.dispose();
+    controller.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final socketClient = context.socketClient;
@@ -265,11 +312,14 @@ class _ChatWindowState extends State<ChatWindow> {
               valueListenable: socketClient.chatMessages,
               builder: (context, messages, child) {
                 return ListView.builder(
+                  controller: controller,
                   itemCount: messages.length,
-                  itemBuilder: (context, index) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2.0),
-                    child: Text(messages[index]),
-                  ),
+                  itemBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                      child: Text(messages[index].text),
+                    );
+                  },
                 );
               }),
         ),
@@ -285,6 +335,13 @@ class _ChatWindowState extends State<ChatWindow> {
             icon: const Icon(Icons.send),
             onPressed: () {
               socketClient.sendChat(message, alertCallback(context));
+              setState(() {
+                message = "";
+              });
+
+              // final position = controller.positions.last;
+              // controller.animateTo(position.maxScrollExtent,
+              //     duration: Durations.medium1, curve: Curves.easeIn);
             },
           ),
         ),
@@ -294,8 +351,8 @@ class _ChatWindowState extends State<ChatWindow> {
 }
 
 // Scoreboard Widget
-class Scoreboard extends StatelessWidget {
-  const Scoreboard({
+class ScoreboardWidget extends StatelessWidget {
+  const ScoreboardWidget({
     super.key,
   });
 
@@ -310,27 +367,49 @@ class Scoreboard extends StatelessWidget {
             children: [
               Text("Scoreboard",
                   style: Theme.of(context).textTheme.titleMedium),
-              // ...scores.entries.map(
+              if (value?.gameMaster != null) ...[
+                PlayerTile(
+                  player: value!.gameMaster!,
+                  isGameMaster: true,
+                ),
+              ],
               Expanded(
                 child: ListView.builder(
-                  itemCount: socketClient.scoreboard.value.length, 
-                  itemBuilder: (context, i) {
-                  final record = context.socketClient.scoreboard.value[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 2.0),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(record.userName),
-                        Text(record.score.toString()),
-                      ],
-                    ),
-                  );
-                }),
+                    itemCount: value?.players.length ?? 0,
+                    itemBuilder: (context, i) {
+                      final player = value?.players[i];
+                      if (value?.gameMaster != null &&
+                          player?.id == value?.gameMaster?.id)
+                        return SizedBox.shrink();
+                      return PlayerTile(
+                        player: player!,
+                        isGameMaster: false,
+                      );
+                    }),
               ),
             ],
           );
         });
+  }
+}
+
+class PlayerTile extends StatelessWidget {
+  const PlayerTile({super.key, required this.player, required isGameMaster});
+
+  final Player player;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text("${player.name} 👑"),
+          Text(player.score.toString()),
+        ],
+      ),
+    );
   }
 }
 
