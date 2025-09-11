@@ -6,19 +6,47 @@ import 'package:guessing_game/pages/home_page.dart';
 import 'package:guessing_game/socket_client_provider.dart';
 import 'package:guessing_game/socket_client.dart';
 
+GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  var socketClient = SocketClient();
   runApp(SocketClientProvider(
-    socketClient: SocketClient(),
+    socketClient: socketClient,
     child: MaterialApp(
+      debugShowCheckedModeBanner: false,
+      scaffoldMessengerKey: scaffoldMessengerKey,
+      navigatorKey: navigatorKey,
       title: 'Guessing Game',
       theme: ThemeData(
         primarySwatch: Colors.indigo,
       ),
-      routes: {
-        RouteNames.homePage: (context) => const HomePage(),
-        RouteNames.createOrJoinPage: (context) => const CreateOrJoinPage(),
-        RouteNames.gamePage: (context) => const GamePage(),
+      onGenerateRoute: (settings) {
+        bool isAuthenticated = socketClient.isConnected.value;
+
+        if (!isAuthenticated) {
+          return MaterialPageRoute(builder: (_) => HomePage());
+        }
+
+        switch (settings.name) {
+          case RouteNames.homePage:
+            return MaterialPageRoute(builder: (_) => HomePage());
+          case RouteNames.createOrJoinPage:
+            return MaterialPageRoute(builder: (_) => CreateOrJoinPage());
+          case RouteNames.gamePage:
+            return MaterialPageRoute(
+              builder: (context) => GamePage(),
+            );
+          default:
+            return MaterialPageRoute(builder: (_) => CreateOrJoinPage());
+        }
       },
+      // routes: {
+      //   RouteNames.homePage: (context) => const HomePage(),
+      //   RouteNames.createOrJoinPage: (context) => const CreateOrJoinPage(),
+      //   RouteNames.gamePage: (context) => const GamePage(),
+      // },
     ),
   ));
 }

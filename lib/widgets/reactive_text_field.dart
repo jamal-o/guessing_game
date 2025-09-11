@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:guessing_game/main.dart';
 
 class ReactiveTextField extends StatefulWidget {
   const ReactiveTextField({

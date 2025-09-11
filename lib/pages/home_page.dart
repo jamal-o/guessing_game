@@ -15,7 +15,24 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      context.socketClient.isConnected.addListener(navigateOnConnected);
+    });
   }
+
+  @override
+  void dispose() {
+    // TODO: implement dispose
+    context.socketClient.isConnected.removeListener(navigateOnConnected);
+    super.dispose();
+  }
+
+  void navigateOnConnected() {
+    if (!context.mounted) return;
+    Navigator.pushNamed(context, RouteNames.createOrJoinPage);
+  }
+
+  AlertCallback get alert => alertCallback(context);
 
   String username = "";
   @override
@@ -64,13 +81,16 @@ class _HomePageState extends State<HomePage> {
                   }
                 });
               },
-              child: Text('Connect to Server')),
+              child: const Text('Connect to Server')),
         ],
       ),
     );
   }
+}
 
-  void alert(String message, [bool isError = false]) {
+AlertCallback alertCallback(BuildContext context) {
+  return (String message, [bool isError = false]) {
+    if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message,
@@ -79,18 +99,5 @@ class _HomePageState extends State<HomePage> {
             )),
       ),
     );
-  }
-}
-
-AlertCallback alertCallback(BuildContext context)  {
-  return (String message, [bool isError = false]) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message,
-              style: TextStyle(
-                color: isError ? Colors.red : Colors.black,
-              )),
-        ),
-      );
-    };
+  };
 }

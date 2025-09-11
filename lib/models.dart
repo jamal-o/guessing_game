@@ -19,7 +19,7 @@ enum EVENTS {
   game$winner,
   game$rooms,
   game$end_game,
-  game$error,
+  game$alert,
   game$new_question,
 }
 

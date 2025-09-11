@@ -1,13 +1,11 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
-import 'dart:convert';
-import 'dart:html';
 
 import 'package:flutter/material.dart';
+import 'package:guessing_game/main.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:socket_io_client/socket_io_client.dart';
 
 import 'package:guessing_game/models.dart';
-import 'package:guessing_game/pages/game_page.dart';
 
 typedef AlertCallback = void Function(String message, [bool isError]);
 
@@ -17,6 +15,23 @@ class SocketClient {
   IO.Socket? _socket;
   String? roomId;
   final String serverUrl = 'http://localhost:3000';
+
+  AlertCallback get alert {
+    final messengerState = scaffoldMessengerKey.currentState;
+    if (messengerState == null) {
+      throw Exception('oops');
+    }
+    return (String message, [bool isError = false]) {
+      messengerState.showSnackBar(
+        SnackBar(
+          content: Text(message,
+              style: TextStyle(
+                color: isError ? Colors.red : Colors.black,
+              )),
+        ),
+      );
+    };
+  }
 
   // ValueNotifiers for state
   final ValueNotifier<bool> isConnected = ValueNotifier(false);
@@ -65,6 +80,8 @@ class SocketClient {
     _socket!.onDisconnect((_) {
       _logEvent("Disconnect", null);
       isConnected.value = false;
+      navigatorKey.currentState?.pushNamedAndRemoveUntil(
+          RouteNames.homePage, (route) => route.isFirst);
     });
 
     _socket!.on(EVENTS.user$chat.name, (res) {
@@ -88,7 +105,10 @@ class SocketClient {
     _socket!.on(EVENTS.game$new_question.name, (res) {
       _logEvent(EVENTS.game$new_question.name, res);
 
-      final response = ResponseDTO.fromJson(res, Question.fromJson);
+      final response = ResponseDTO.fromJson(res, (json) {
+        if (json['text'] == null) return null;
+        return Question.fromJson(json);
+      });
       question.value = response.data;
     });
 
@@ -107,33 +127,47 @@ class SocketClient {
 
       final response = ResponseDTO.fromJson(res, Scoreboard.fromJson);
 
+      final previouslyGameMaster = isGameMaster.value;
       scoreboard.value = response.data;
 
       isGameMaster.value =
           scoreboard.value?.gameMaster?.id == (_socket?.id ?? "disconnected");
+
+      if (isGameMaster.value && !previouslyGameMaster) {
+        alert("You are the Game Master");
+      }
     });
 
     _socket!.on(EVENTS.game$question_timeout.name, (res) {
       _logEvent(EVENTS.game$question_timeout.name, res);
-
-      //TODO:
+      question.value = null;
+      alert("Question timed out!");
     });
 
     _socket!.on(EVENTS.game$winner.name, (res) {
       _logEvent(EVENTS.game$winner.name, res);
 
-      throw UnimplementedError();
+      alert(
+          "We have a winner! ${res['data']['username']} with score ${res['data']['score']}");
     });
 
-    _socket!.on(EVENTS.game$error.name, (res) {
-      _logEvent(EVENTS.game$error.name, res);
+    _socket!.on(EVENTS.game$alert.name, (res) {
+      _logEvent(EVENTS.game$alert.name, res);
 
-      //TODO: handle error
+      final response = ResponseDTO<String>.fromJson(
+        res,
+        (p0) => p0['message'],
+      );
+
+      alert(response.data, response.success);
     });
 
     _socket!.on('error', (msg) {
       _logEvent("error", msg);
+      alert("Error: $msg", true);
     });
+
+    _socket!.onAny((event, data) => _logEvent(event, data));
   }
 
   void _logEvent(String event, dynamic data) {
@@ -142,7 +176,6 @@ class SocketClient {
 
   void joinRoom({
     required Room room,
-    required AlertCallback alert,
   }) {
     if (_socket == null) {
       return;
@@ -156,6 +189,7 @@ class SocketClient {
         if (success) {
           roomId = roomCode;
           alert("Joined room successfully");
+          navigatorKey.currentState?.pushNamed(RouteNames.gamePage);
         } else {
           alert("Error joining room", true);
         }
@@ -163,9 +197,7 @@ class SocketClient {
     );
   }
 
-  void createGame({
-    required AlertCallback alert,
-  }) {
+  void createGame() {
     if (_socket == null) {
       alert("Socket not initialized.", true);
       return;
@@ -180,6 +212,8 @@ class SocketClient {
           alert(
             "Game created successfully",
           );
+          navigatorKey.currentState?.pushNamedAndRemoveUntil(
+              RouteNames.gamePage, (route) => route.isFirst);
         } else {
           alert(
             "Failed to create game.",
@@ -190,7 +224,7 @@ class SocketClient {
     );
   }
 
-  void sendChat(String message, AlertCallback alert) {
+  void sendChat(String message) {
     if (_socket == null || roomId == null) {
       alert(
         "Not connected to any game.",
@@ -208,7 +242,10 @@ class SocketClient {
     });
   }
 
-  void addQuestion(Question payload, int duration, AlertCallback alert) {
+  void addQuestion(
+    Question payload,
+    int duration,
+  ) {
     if (_socket == null || roomId == null) {
       alert(
         "Not connected to any game.",
@@ -223,6 +260,20 @@ class SocketClient {
       },
       "roomId": roomId,
       "duration": duration
+    });
+  }
+
+  void guess(String guess) {
+    if (_socket == null || roomId == null) {
+      alert(
+        "Not connected to any game.",
+        true,
+      );
+      return;
+    }
+    _socket!.emit(EVENTS.player$guess.name, {
+      "answer": guess,
+      "roomId": roomId,
     });
   }
 }
@@ -247,6 +298,17 @@ class Room {
 }
 
 enum PlayerStatus { online, offline, disconnected }
+
+// class Message{
+//   final bool success;
+//   final String text;
+
+//   Message({required this.success, required this.text});
+
+//   factory Message.fromJson(Json json){
+//     return Message(success: json['message'], text: json['text'],);
+//   }
+// }
 
 class Player {
   final String name;
@@ -342,9 +404,14 @@ class ResponseDTO<T> {
       {required this.success, required this.message, required this.data});
 
   factory ResponseDTO.fromJson(Json json, T Function(Json) transformer) {
-    return ResponseDTO(
-        success: json['success'],
-        message: json["message"],
-        data: transformer(json['data']));
+    try {
+      return ResponseDTO(
+          success: json['success'],
+          message: json["message"],
+          data: transformer(json['data']));
+    } on Exception catch (e) {
+      print("Error parsing json: ${json}: error: ${e}");
+      rethrow;
+    }
   }
 }
