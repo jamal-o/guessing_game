@@ -33,11 +33,10 @@ class _GamePageState extends State<GamePage> {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              socketClient.disconnect();
-              Navigator.pushNamedAndRemoveUntil(
+              socketClient.leaveRoom();
+              Navigator.pushReplacementNamed(
                 context,
                 RouteNames.createOrJoinPage,
-                (route) => route.isFirst,
               );
             },
           ),

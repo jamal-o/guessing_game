@@ -16,21 +16,20 @@ class SocketClient {
   String? roomId;
   final String serverUrl = 'http://localhost:3000';
 
-  AlertCallback get alert {
+  void alert(String message, [bool isError = false]) {
     final messengerState = scaffoldMessengerKey.currentState;
     if (messengerState == null) {
       throw Exception('oops');
     }
-    return (String message, [bool isError = false]) {
-      messengerState.showSnackBar(
-        SnackBar(
-          content: Text(message,
-              style: TextStyle(
-                color: isError ? Colors.red : Colors.black,
-              )),
-        ),
-      );
-    };
+
+    messengerState.showSnackBar(
+      SnackBar(
+        content: Text(message,
+            style: TextStyle(
+              color: isError ? Colors.red : Colors.black,
+            )),
+      ),
+    );
   }
 
   // ValueNotifiers for state
@@ -154,12 +153,12 @@ class SocketClient {
     _socket!.on(EVENTS.game$alert.name, (res) {
       _logEvent(EVENTS.game$alert.name, res);
 
-      final response = ResponseDTO<String>.fromJson(
+      final response = ResponseDTO<void>.fromJson(
         res,
-        (p0) => p0['message'],
+        (p0) {},
       );
 
-      alert(response.data, response.success);
+      alert(response.message, response.success);
     });
 
     _socket!.on('error', (msg) {
@@ -189,7 +188,7 @@ class SocketClient {
         if (success) {
           roomId = roomCode;
           alert("Joined room successfully");
-          navigatorKey.currentState?.pushNamed(RouteNames.gamePage);
+          navigatorKey.currentState?.pushReplacementNamed(RouteNames.gamePage);
         } else {
           alert("Error joining room", true);
         }
@@ -380,7 +379,8 @@ class Question {
 class Chat {
   final String text;
   final String username;
-  final String time;
+
+  final DateTime? time;
 
   Chat({
     required this.text,
@@ -391,8 +391,13 @@ class Chat {
   @override
   factory Chat.fromJson(Map<String, dynamic> json) {
     return Chat(
-        text: json["text"], username: json['username'], time: json['time']);
+      text: json["text"],
+      username: json['username'],
+      time: DateTime.parse(json['time']),
+    );
   }
+
+  String get timeString => '${time?.hour}:${time?.minute}';
 }
 
 class ResponseDTO<T> {

@@ -16,72 +16,88 @@ class _ChatWindowState extends State<ChatWindow> {
   final controller = ScrollController();
 
   @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.socketClient.chatMessages.addListener(() {
-        controller.jumpTo(controller.position.maxScrollExtent);
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    // TODO: implement dispose
-    super.dispose();
-    controller.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final socketClient = context.socketClient;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Chat", style: Theme.of(context).textTheme.titleMedium),
-        Expanded(
-          child: ValueListenableBuilder(
-              valueListenable: socketClient.chatMessages,
-              builder: (context, messages, child) {
-                return ListView.builder(
-                  controller: controller,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2.0),
-                      child: Text(messages[index].text),
-                    );
-                  },
-                );
-              }),
-        ),
-        ReactiveTextField(
-          hintText: "Type a message...",
-          text: message,
-          onChanged: (value) {
-            setState(() {
-              message = value;
-            });
-          },
-          trailing: IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: () {
-              socketClient.sendChat(
-                message,
-              );
-              setState(() {
-                message = "";
-              });
-
-              // final position = controller.positions.last;
-              // controller.animateTo(position.maxScrollExtent,
-              //     duration: Durations.medium1, curve: Curves.easeIn);
-            },
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Chat",
+            style: Theme.of(context).textTheme.titleMedium,
           ),
-        ),
-      ],
+          Expanded(
+            child: ValueListenableBuilder(
+                valueListenable: socketClient.chatMessages,
+                builder: (context, messages, child) {
+                  return ListView.builder(
+                    controller: controller,
+                    itemCount: messages.length,
+                    itemBuilder: (context, index) {
+                      final message = messages[index];
+                      return Card(
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                message.username,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                              Text(
+                                message.text,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              Text(
+                                message.timeString,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Colors.grey,
+                                    ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                }),
+          ),
+          ReactiveTextField(
+            hintText: "Type a message...",
+            text: message,
+            onChanged: (value) {
+              setState(() {
+                message = value;
+              });
+            },
+            trailing: IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: () {
+                socketClient.sendChat(message);
+                setState(() {
+                  message = "";
+                });
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

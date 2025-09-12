@@ -16,20 +16,26 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      context.socketClient.isConnected.addListener(navigateOnConnected);
+      socketClient.isConnected.addListener(navigateOnConnected);
     });
+  }
+
+  late SocketClient socketClient;
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    socketClient = context.socketClient;
   }
 
   @override
   void dispose() {
-    // TODO: implement dispose
-    context.socketClient.isConnected.removeListener(navigateOnConnected);
+    socketClient.isConnected.removeListener(navigateOnConnected);
     super.dispose();
   }
 
   void navigateOnConnected() {
     if (!context.mounted) return;
-    Navigator.pushNamed(context, RouteNames.createOrJoinPage);
+    Navigator.pushReplacementNamed(context, RouteNames.createOrJoinPage);
   }
 
   AlertCallback get alert => alertCallback(context);
@@ -37,7 +43,6 @@ class _HomePageState extends State<HomePage> {
   String username = "";
   @override
   Widget build(BuildContext context) {
-    final socketClient = context.socketClient;
     return Scaffold(
       appBar: AppBar(
         title: const Text('Home Page'),
@@ -66,26 +71,28 @@ class _HomePageState extends State<HomePage> {
                   username: username,
                 );
 
-                socketClient.isConnected.addListener(() async {
-                  final isConnected = socketClient.isConnected.value;
-                  final message =
-                      isConnected ? "Connected to server." : "Disconnected.";
-                  final isError = !isConnected;
-                  if (socketClient.isConnected.value) {
-                    alert(message);
-                    await Future.delayed(Durations.long2);
-                    if (!context.mounted) return;
-                    Navigator.pushNamed(context, RouteNames.createOrJoinPage);
-                  } else {
-                    alert(message, isError);
-                  }
-                });
+                // socketClient.isConnected
+                //     .addListener(() => isConnectedListener(socketClient));
               },
               child: const Text('Connect to Server')),
         ],
       ),
     );
   }
+
+  // void isConnectedListener(SocketClient socketClient) async {
+  //   final isConnected = socketClient.isConnected.value;
+  //   final message = isConnected ? "Connected to server." : "Disconnected.";
+  //   final isError = !isConnected;
+  //   if (socketClient.isConnected.value) {
+  //     alert(message);
+  //     await Future.delayed(Durations.long2);
+  //     if (!context.mounted) return;
+  //     Navigator.pushNamed(context, RouteNames.createOrJoinPage);
+  //   } else {
+  //     alert(message, isError);
+  //   }
+  // }
 }
 
 AlertCallback alertCallback(BuildContext context) {

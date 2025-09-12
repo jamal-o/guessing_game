@@ -55,11 +55,13 @@ class ScaffoldDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.leaderboard),
-            title: const Text('Scoreboard'),
+            leading: const Icon(Icons.room),
+            title: const Text('Rooms'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.popAndPushNamed(context, RouteNames.createOrJoinPage);
+
+              Navigator.pushReplacementNamed(
+                  context, RouteNames.createOrJoinPage);
             },
           ),
         ],
