@@ -14,7 +14,10 @@ class SocketClient {
 
   IO.Socket? _socket;
   String? roomId;
-  final String serverUrl = 'http://localhost:3000';
+  final String serverUrl = const String.fromEnvironment(
+    'SERVER_URL',
+    defaultValue: 'http://localhost:3000',
+  );
 
   void alert(String message, [bool isError = false]) {
     final messengerState = scaffoldMessengerKey.currentState;
@@ -291,7 +294,7 @@ class Room {
     return Room(
       roomId: json['roomId'] ?? '',
       created: json['created'] ?? '',
-      activePlayers: json['activePlayers']?.toString() ?? '',
+      activePlayers: json['players']?.toString() ?? '',
     );
   }
 }

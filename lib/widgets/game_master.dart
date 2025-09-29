@@ -15,6 +15,7 @@ class _GameMasterState extends State<GameMaster> {
   String question = "";
 
   String answer = "";
+  String duration = "";
 
   @override
   Widget build(BuildContext context) {
@@ -23,17 +24,38 @@ class _GameMasterState extends State<GameMaster> {
         builder: (context, value, child) {
           return Column(
             children: [
-              const Text("Game Master"),
+              Text(
+                "Game Master",
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              SizedBox(
+                height: 12,
+              ),
               if (value == null) ...[
-                const Text("Add questions here"),
+                Text(
+                  "Add questions here",
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
                 ReactiveTextField(
                     hintText: "Question",
                     text: question,
                     onChanged: (value) => question = value),
+                SizedBox(
+                  height: 12,
+                ),
                 ReactiveTextField(
                     hintText: "Answer",
                     text: answer,
                     onChanged: (value) => answer = value),
+                SizedBox(
+                  height: 12,
+                ),
+                ReactiveTextField(
+                  hintText: "Duration",
+                  text: duration,
+                  textInputType: TextInputType.number,
+                  onChanged: (value) => duration = value,
+                ),
                 TextButton(
                     onPressed: () {
                       if (question.isEmpty || answer.isEmpty) {
@@ -45,7 +67,7 @@ class _GameMasterState extends State<GameMaster> {
 
                       context.socketClient.addQuestion(
                         payload,
-                        5,
+                        int.tryParse(duration) ?? 20,
                       );
 
                       setState(() {

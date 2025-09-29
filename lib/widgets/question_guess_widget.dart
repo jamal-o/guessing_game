@@ -19,7 +19,10 @@ class _QuestionGuessWidgetState extends State<QuestionGuessWidget> {
         valueListenable: context.socketClient.question,
         builder: (context, question, child) {
           return question == null
-              ? const Text("No active Question")
+              ? const Text(
+                  "No active Question",
+                  textAlign: TextAlign.center,
+                )
               : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -42,8 +45,9 @@ class _QuestionGuessWidgetState extends State<QuestionGuessWidget> {
                       const SizedBox(height: 8),
                       ElevatedButton(
                         onPressed: () {
-                          context.socketClient
-                              .guess(guess,);
+                          context.socketClient.guess(
+                            guess,
+                          );
                           setState(() {
                             guess = "";
                           });

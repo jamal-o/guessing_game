@@ -48,9 +48,14 @@ class _HomePageState extends State<HomePage> {
         title: const Text('Home Page'),
       ),
       body: ListView(
+        padding: const EdgeInsets.all(16.0),
         children: [
-          const Center(
-            child: Text('Welcome to the Guessing Game!'),
+          Center(
+            child: Text('Welcome to the Guessing Game!',
+                style: Theme.of(context).textTheme.titleLarge),
+          ),
+          SizedBox(
+            height: 24,
           ),
           ReactiveTextField(
             hintText: "Input a username",
@@ -60,6 +65,9 @@ class _HomePageState extends State<HomePage> {
                 username = value;
               });
             },
+          ),
+          SizedBox(
+            height: 12,
           ),
           TextButton(
               onPressed: () {

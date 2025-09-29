@@ -48,28 +48,31 @@ class _GamePageState extends State<GamePage> {
           valueListenable: socketClient.isGameMaster,
           builder: (context, isGameMaster, child) {
             return isMobile
-                ? Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (isGameMaster)
+                ? Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (isGameMaster)
+                          const Card(
+                            elevation: 2,
+                            child: Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: GameMaster(),
+                            ),
+                          ),
+                        const SizedBox(height: 16),
                         const Card(
                           elevation: 2,
                           child: Padding(
                             padding: EdgeInsets.all(8.0),
-                            child: GameMaster(),
+                            child: QuestionGuessWidget(),
                           ),
                         ),
-                      const SizedBox(height: 16),
-                      const Card(
-                        elevation: 2,
-                        child: Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: QuestionGuessWidget(),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Add a floating button for chat and scoreboard
-                    ],
+                        const SizedBox(height: 16),
+                        // Add a floating button for chat and scoreboard
+                      ],
+                    ),
                   )
                 : Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -180,11 +183,11 @@ class PlayerTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text("${player.name}${isGameMaster ? " 👑" : ""}"),
+          Text("${player.name}${isGameMaster ? " (Game Master)" : ""}"),
           Text(player.score.toString()),
         ],
       ),

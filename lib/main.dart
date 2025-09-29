@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:guessing_game/apptheme.dart';
 
 import 'package:guessing_game/pages/create_or_join_page.dart';
 import 'package:guessing_game/pages/game_page.dart';
@@ -19,9 +20,10 @@ void main() {
       scaffoldMessengerKey: scaffoldMessengerKey,
       navigatorKey: navigatorKey,
       title: 'Guessing Game',
-      theme: ThemeData(
-        primarySwatch: Colors.indigo,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.light,
+
       onGenerateRoute: (settings) {
         bool isAuthenticated = socketClient.isConnected.value;
 
