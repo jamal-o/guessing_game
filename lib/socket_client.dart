@@ -16,7 +16,7 @@ class SocketClient {
   String? roomId;
   final String serverUrl = const String.fromEnvironment(
     'SERVER_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://localhost:5000/',
   );
 
   void alert(String message, [bool isError = false]) {
@@ -50,6 +50,7 @@ class SocketClient {
   }) {
     _username = username;
     // Socket is not connected until connect() is called
+    debugPrint("Connecting to $serverUrl");
     _socket = IO.io(
       serverUrl,
       IO.OptionBuilder()
