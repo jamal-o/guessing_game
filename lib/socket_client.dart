@@ -50,7 +50,7 @@ class SocketClient {
   }) {
     _username = username;
     // Socket is not connected until connect() is called
-    debugPrint("Connecting to $serverUrl");
+    print("Connecting to $serverUrl");
     _socket = IO.io(
       serverUrl,
       IO.OptionBuilder()
